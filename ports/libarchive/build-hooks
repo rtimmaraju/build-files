@@ -1,0 +1,58 @@
+#!/bin/bash
+
+#libarchive top level directory
+SRC=../../../../libarchive
+prefix=$INSTALL_ROOT_nto/${cpudir}
+#CFLAGS doesn't include the lz4 directory, then config.h doesn't get the variable HAVE_LZMA_H, which results in a linking error
+CFLAGS="${CFLAGS} -I${QNX_TARGET}/usr/include/lz4"
+LIBARCHIVE_TEST_DIR=$prefix/usr/share/test/libarchive
+BSDTAR_TEST_DIR=$prefix/usr/share/test/bsdtar
+EXTRA_MAKE_TARGETS="libarchive_test bsdtar_test"
+
+function hook_configure {
+	$SRC/configure \
+                ${ac_host:+"--host=${ac_host}"} \
+                ${ac_build:+"--build=${ac_build}"} \
+                ${configure_opts} \
+		--srcdir="${SRC}" \
+		--prefix="${prefix}"
+}
+
+function hook_postconfigure {
+  echo "removing fstatat() support"
+  sed -i 's/^D.*HAVE_FSTATAT.*//g' config.status
+  rm -f config.h
+}
+
+function hook_postmake {
+	#if we were trying to build, make sure EXTRA_MAKE_TARGETS are added in
+	if [ -z $make_cmds ]; then
+		make ${EXTRA_MAKE_TARGETS} || exit
+	elif [ "$make_cmds" = "install" ]; then
+		make ${EXTRA_MAKE_TARGETS} || exit
+		#copy libarchive_test
+		echo "copying libarchive_test binaries to $LIBARCHIVE_TEST_DIR"
+		mkdir -p $LIBARCHIVE_TEST_DIR
+		cp libarchive_test $LIBARCHIVE_TEST_DIR
+		echo "copying the reference files to $LIBARCHIVE_TEST_DIR"
+		cp -r ../../../libarchive/test/*.uu $LIBARCHIVE_TEST_DIR
+
+		#copy bsdtar_test
+		echo "copying bsdtar_test binaries to $BSDTAR_TEST_DIR"
+		mkdir -p $BSDTAR_TEST_DIR
+		cp bsdtar_test $BSDTAR_TEST_DIR
+		echo "copying the reference files to $BSDTAR_TEST_DIR"
+		cp -r ../../../tar/test/*.uu $BSDTAR_TEST_DIR
+
+		# Create the 'tar' links to bsdtar
+		ln -s bsdtar ${prefix}/bin/tar
+	fi
+}
+
+function hook_pinfo {
+	gen_pinfo -nbsdtar bsdtar usr/bin LIC=bsdtar SYMLINK=tar DESCRIPTION="libarchive tar"
+	SetInstallOnUse yes
+	
+	#generate version info for shiplist
+	echo "BSDTAR_VERSION=$( cat ../../../build/version)" | sed 's/00/./g' > ../../shiplist/shiplist.vars
+}
