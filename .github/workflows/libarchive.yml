@@ -1,0 +1,52 @@
+name: libarchive
+
+permissions:
+  contents: write
+  checks: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/libarchive.yml"
+      - "ports/libarchive/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/libarchive.yml"
+      - "ports/libarchive/**"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        qnx_env: ["710", "800"]
+    name: Build for QNX ${{ matrix.qnx_env }}
+    runs-on: ubuntu-22.04-common
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.title, 'libarchive'))
+    steps:
+      - name: Checkout build-files
+        uses: actions/checkout@v4
+        with:
+          path: build-files
+
+      - name: Checkout libarchive
+        uses: actions/checkout@v4
+        with:
+          path: libarchive
+
+      - name: Build libarchive
+        shell: bash
+        run: |
+          if [[ ${{ matrix.qnx_env }} == 710 ]]; then
+            source ~/qnx/710/qnxsdp-env.sh
+          else
+            source ~/qnx/800/qnxsdp-env.sh
+          fi
+          BUILD_TESTING="ON" QNX_PROJECT_ROOT="$(pwd)/libarchive" make -C build-files/ports/libarchive install
