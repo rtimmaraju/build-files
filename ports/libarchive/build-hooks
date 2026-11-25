@@ -9,14 +9,16 @@ LIBARCHIVE_TEST_DIR=$prefix/usr/local/bin/libarchive
 EXTRA_MAKE_TARGETS="libarchive_test "
 
 function hook_configure {
-	ac_cv_func_openat=no \
-$SRC/configure \
-    ${ac_host:+"--host=${ac_host}"} \
-    ${ac_build:+"--build=${ac_build}"} \
-    ${configure_opts} \
-    --srcdir="${SRC}" \
-    --prefix="${prefix}"
+    ac_cv_func_fstatat=no \
+    ac_cv_func_openat=no \
+    $SRC/configure \
+        ${ac_host:+"--host=${ac_host}"} \
+        ${ac_build:+"--build=${ac_build}"} \
+        ${configure_opts} \
+        --srcdir="${SRC}" \
+        --prefix="${prefix}"
 }
+
 
 function hook_postmake {
 	#if we were trying to build, make sure EXTRA_MAKE_TARGETS are added in
