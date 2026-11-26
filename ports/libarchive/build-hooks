@@ -9,7 +9,9 @@ LIBARCHIVE_TEST_DIR=$prefix/usr/local/bin/libarchive
 EXTRA_MAKE_TARGETS="libarchive_test "
 
 function hook_configure {
-    ac_cv_func_openat=no \
+	ac_cv_func_openat=no \
+   ac_cv_func_fstatat=no \
+   ac_cv_func_readlinkat=no \
     $SRC/configure \
         ${ac_host:+"--host=${ac_host}"} \
         ${ac_build:+"--build=${ac_build}"} \
